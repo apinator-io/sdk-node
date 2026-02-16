@@ -1,0 +1,25 @@
+{
+  "version": "1.0.0-breaking",
+  "algorithm": "HMAC-SHA256",
+  "cases": [
+    {
+      "name": "private-channel",
+      "secret": "channel-secret-1",
+      "key": "app_key_1",
+      "socket_id": "1234.5678",
+      "channel_name": "private-orders",
+      "expected_signature": "a23ecad0d4ecfa34499ed5d61dd56e126027906d44fe5a181ac78ff084326f75",
+      "expected_auth": "app_key_1:a23ecad0d4ecfa34499ed5d61dd56e126027906d44fe5a181ac78ff084326f75"
+    },
+    {
+      "name": "presence-channel",
+      "secret": "channel-secret-2",
+      "key": "app_key_2",
+      "socket_id": "2345.6789",
+      "channel_name": "presence-room",
+      "channel_data": "{\"user_id\":\"u-1\",\"user_info\":{\"name\":\"Alice\"}}",
+      "expected_signature": "c65e6d60bc518553a373a056ee6166b6e7d44c9219f525df5730aefc0163b1f5",
+      "expected_auth": "app_key_2:c65e6d60bc518553a373a056ee6166b6e7d44c9219f525df5730aefc0163b1f5"
+    }
+  ]
+}

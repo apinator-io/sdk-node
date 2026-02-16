@@ -1,0 +1,20 @@
+{
+  "version": "1.0.0-breaking",
+  "algorithm": "HMAC-SHA256",
+  "cases": [
+    {
+      "name": "webhook-basic",
+      "secret": "webhook-secret-1",
+      "timestamp": "1700000000",
+      "body": "{\"event\":\"channel_occupied\",\"channel\":\"chat\"}",
+      "expected_signature": "96f105a746abcc4bcf70c7a73ef99fb3b3f1cc196d88948b83e93a885b355695"
+    },
+    {
+      "name": "webhook-empty-json-object",
+      "secret": "webhook-secret-2",
+      "timestamp": "1700000010",
+      "body": "{}",
+      "expected_signature": "7c0deac78739d9b7e52b156c7a3d10a71d55f63fa6879851bbcdee002900def8"
+    }
+  ]
+}

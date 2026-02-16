@@ -1,0 +1,35 @@
+{
+  "version": "1.0.0-breaking",
+  "algorithm": "HMAC-SHA256",
+  "canonical_rule": "path_without_query",
+  "cases": [
+    {
+      "name": "post-events-json-body",
+      "secret": "test-secret-1",
+      "method": "POST",
+      "path": "/apps/123/events",
+      "body": "{\"name\":\"new-message\",\"channel\":\"chat\",\"data\":\"{\\\"hello\\\":\\\"world\\\"}\"}",
+      "timestamp": 1700000000,
+      "expected_signature": "5b4fc4e2359786bf85a6563cfb35fda3370ad50e4c1e3ed86994eea6b6184ff5"
+    },
+    {
+      "name": "get-channels-empty-body",
+      "secret": "test-secret-2",
+      "method": "GET",
+      "path": "/apps/123/channels",
+      "body": "",
+      "timestamp": 1700000100,
+      "expected_signature": "f4d9a4b8914a18d81484f14bedcf0ec8cc62839798f3d858cf822d8d54bdfd13"
+    },
+    {
+      "name": "query-not-signed",
+      "secret": "test-secret-3",
+      "method": "GET",
+      "path": "/apps/123/channels",
+      "raw_path": "/apps/123/channels?filter_by_prefix=private-",
+      "body": "",
+      "timestamp": 1700000200,
+      "expected_signature": "21069d0104b25071369f7aa8ce840fcae0875e08ca558639cf642c53ca55c959"
+    }
+  ]
+}

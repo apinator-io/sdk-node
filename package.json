@@ -1,0 +1,60 @@
+{
+  "name": "@apinator/server",
+  "version": "1.1.1",
+  "description": "Node.js server SDK for Apinator",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "lint": "tsc --noEmit",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md",
+    "docs"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "apinator",
+    "realtime",
+    "websocket",
+    "pubsub",
+    "channels",
+    "presence",
+    "server",
+    "sdk"
+  ],
+  "author": "Apinator <dev@apinator.io> (https://apinator.io)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/apinator-io/sdk-node.git"
+  },
+  "bugs": {
+    "url": "https://github.com/apinator-io/sdk-node/issues"
+  },
+  "homepage": "https://github.com/apinator-io/sdk-node#readme",
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@vitest/coverage-v8": "^2.1.9",
+    "tsup": "^8.0.0",
+    "typescript": "^5.4.0",
+    "vitest": "^2.0.0"
+  }
+}
