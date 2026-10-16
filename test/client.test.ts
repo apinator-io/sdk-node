@@ -26,6 +26,13 @@ describe("Apinator client", () => {
       const client = new Apinator(options);
       expect(client).toBeDefined();
     });
+
+    it("should use an explicit host, without a trailing slash", async () => {
+      fetchMock.mockResolvedValue({ ok: true, text: async () => '{"channels":[]}' });
+      const client = new Apinator({ ...options, host: "http://localhost:8081/" });
+      await client.getChannels();
+      expect(fetchMock.mock.calls[0][0]).toBe("http://localhost:8081/apps/test-app-id/channels");
+    });
   });
 
   describe("trigger", () => {

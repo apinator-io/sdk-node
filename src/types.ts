@@ -10,6 +10,12 @@ export interface RealtimeOptions {
   secret: string;
   /** Cluster region identifier (e.g. "eu", "us") */
   cluster: string;
+  /**
+   * Base URL of the REST API, without a trailing slash. Defaults to
+   * `https://ws-{cluster}.apinator.io`; set it to target a local or
+   * self-hosted data plane.
+   */
+  host?: string;
 }
 
 /**

@@ -62,7 +62,7 @@ export class Apinator {
     this.appId = options.appId;
     this.key = options.key;
     this.secret = options.secret;
-    this.host = `https://ws-${options.cluster}.apinator.io`;
+    this.host = (options.host ?? `https://ws-${options.cluster}.apinator.io`).replace(/\/+$/, "");
   }
 
   /**
