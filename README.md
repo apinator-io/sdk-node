@@ -27,6 +27,7 @@ const client = new Apinator({
   key: process.env.APINATOR_KEY!,
   secret: process.env.APINATOR_SECRET!,
   cluster: "eu", // or "us"
+  // host: "http://localhost:8081", // optional: a local or self-hosted data plane
 });
 
 await client.trigger({
