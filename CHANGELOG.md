@@ -8,6 +8,13 @@
 - Expanded webhook header typing to support Node framework header shapes (`string | string[] | undefined`).
 - Added open-source package metadata, documentation, and CI/release workflows.
 
+## [2.1.1](https://github.com/apinator-io/sdk-node/compare/v2.1.0...v2.1.1) (2026-10-17)
+
+
+### Miscellaneous Chores
+
+* release 2.1.1 ([21ffd91](https://github.com/apinator-io/sdk-node/commit/21ffd910b5b60e8698957f3829ab388cfe605e70))
+
 ## [2.1.0](https://github.com/apinator-io/sdk-node/compare/v2.0.0...v2.1.0) (2026-10-17)
 
 
