@@ -37,6 +37,21 @@ await client.trigger({
 });
 ```
 
+## Cache Channels
+
+Publish to a channel named `cache-`, `private-cache-` or `presence-cache-` and Apinator keeps
+the last event for 30 minutes, so a client that subscribes after the publish still receives it.
+Nothing else changes: trigger as usual, and authorize private and presence cache channels like
+any other private or presence channel.
+
+```ts
+await client.trigger({
+  name: "job-finished",
+  channel: `private-cache-job-${jobId}`,
+  data: JSON.stringify({ status: "done" }),
+});
+```
+
 ## Channel Auth (Private/Presence)
 
 ```ts
