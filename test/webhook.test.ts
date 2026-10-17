@@ -161,7 +161,7 @@ describe("webhook", () => {
         expect(result).toBe(false);
       });
 
-      it("should return false for future timestamp", () => {
+      it("should accept a timestamp slightly in the future (clock skew)", () => {
         const currentTime = Math.floor(Date.now() / 1000);
         const timestamp = (currentTime + 100).toString(); // 100 seconds in the future
         const body = '{"event":"channel_occupied","channel":"test"}';
@@ -172,8 +172,48 @@ describe("webhook", () => {
           "x-realtime-timestamp": timestamp,
         };
 
+        expect(verifyWebhook(secret, headers, body, 300)).toBe(true);
+      });
+
+      it("should return false for a timestamp more than 300s in the future", () => {
+        const currentTime = Math.floor(Date.now() / 1000);
+        const timestamp = (currentTime + 400).toString(); // 400 seconds in the future
+        const body = '{"event":"channel_occupied","channel":"test"}';
+        const signature = signWebhookPayload(secret, timestamp, body);
+
+        const headers = {
+          "x-realtime-signature": `sha256=${signature}`,
+          "x-realtime-timestamp": timestamp,
+        };
+
         const result = verifyWebhook(secret, headers, body, 300);
         expect(result).toBe(false);
+      });
+
+      it("should reject a far-future timestamp even with a large maxAge", () => {
+        const timestamp = (Math.floor(Date.now() / 1000) + 600).toString();
+        const body = '{"event":"channel_occupied","channel":"test"}';
+        const signature = signWebhookPayload(secret, timestamp, body);
+
+        const headers = {
+          "x-realtime-signature": `sha256=${signature}`,
+          "x-realtime-timestamp": timestamp,
+        };
+
+        expect(verifyWebhook(secret, headers, body, 3600)).toBe(false);
+      });
+
+      it("should not check freshness without maxAge", () => {
+        const timestamp = (Math.floor(Date.now() / 1000) + 600).toString();
+        const body = '{"event":"channel_occupied","channel":"test"}';
+        const signature = signWebhookPayload(secret, timestamp, body);
+
+        const headers = {
+          "x-realtime-signature": `sha256=${signature}`,
+          "x-realtime-timestamp": timestamp,
+        };
+
+        expect(verifyWebhook(secret, headers, body)).toBe(true);
       });
 
       it("should return false for invalid timestamp", () => {

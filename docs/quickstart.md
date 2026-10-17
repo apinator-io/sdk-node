@@ -41,10 +41,21 @@ const auth = client.authenticateChannel(
 
 ## 5. Verify webhooks
 
+Use the webhook endpoint's signing secret (`whsec_...`, from the console), not the
+app's API secret, and the raw request body:
+
 ```ts
 const isValid = client.verifyWebhook(
+  process.env.APINATOR_WEBHOOK_SECRET!,
   req.headers as Record<string, string | string[] | undefined>,
   rawBody,
   300
 );
+if (!isValid) {
+  return res.status(401).send("Invalid signature");
+}
+
+const event = JSON.parse(rawBody);
+// {"id":"...","event":"member_added","app_id":"...","channel":"presence-room","user_id":"42","time_ms":1760000000000}
+// Deliveries are at-least-once: ignore an event.id you have already processed.
 ```
