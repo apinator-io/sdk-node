@@ -2,15 +2,27 @@ import { timingSafeEqual } from "crypto";
 import { signWebhookPayload } from "./crypto";
 
 /**
+ * How far in the future (in seconds) a webhook timestamp may be before it is
+ * rejected, when a `maxAge` is given. Allows for clock skew between the
+ * Apinator servers and the receiver.
+ */
+export const WEBHOOK_MAX_FUTURE_SKEW_SECONDS = 300;
+
+/**
  * Verify the authenticity of a webhook request.
  *
- * This function verifies that the webhook was sent by the Realtime service
- * by validating the HMAC signature in the request headers.
+ * This function verifies that the webhook was sent by Apinator by validating
+ * the `X-Realtime-Signature` header:
+ * `sha256=hex(hmac_sha256(secret, "{timestamp}.{raw_body}"))`.
  *
- * @param secret - Webhook secret
- * @param headers - HTTP headers from the webhook request (case-insensitive keys)
- * @param body - Raw request body as string
+ * @param secret - The webhook endpoint's signing secret (`whsec_...`, shown in
+ *   the console for each webhook endpoint). This is NOT the app's API secret.
+ * @param headers - HTTP headers from the webhook request (case-insensitive keys;
+ *   array values use the first entry)
+ * @param body - Raw request body as string, exactly as received
  * @param maxAge - Optional maximum age in seconds for the webhook timestamp
+ *   (300 recommended). When set, timestamps older than `maxAge` or more than
+ *   300 seconds in the future are rejected.
  * @returns true if the webhook is valid, false otherwise
  *
  * @example
@@ -20,7 +32,7 @@ import { signWebhookPayload } from "./crypto";
  *   const headers = req.headers;
  *   const body = req.body.toString('utf8');
  *
- *   if (!verifyWebhook('my-webhook-secret', headers, body, 300)) {
+ *   if (!verifyWebhook(process.env.APINATOR_WEBHOOK_SECRET!, headers, body, 300)) {
  *     return res.status(401).send('Invalid signature');
  *   }
  *
@@ -56,7 +68,8 @@ export function verifyWebhook(
     return false;
   }
 
-  // If maxAge provided, check timestamp is within maxAge of current time
+  // If maxAge provided, check timestamp is within maxAge in the past and
+  // within the allowed clock skew in the future
   if (maxAge !== undefined) {
     const webhookTime = parseInt(timestamp, 10);
     if (isNaN(webhookTime)) {
@@ -66,7 +79,7 @@ export function verifyWebhook(
     const currentTime = Math.floor(Date.now() / 1000);
     const age = currentTime - webhookTime;
 
-    if (age > maxAge || age < 0) {
+    if (age > maxAge || -age > WEBHOOK_MAX_FUTURE_SKEW_SECONDS) {
       return false;
     }
   }

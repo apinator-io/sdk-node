@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { readFileSync } from "node:fs";
 import { signRequest, signChannel, signWebhookPayload } from "../src/crypto";
 import { authenticateChannel } from "../src/auth";
+import { verifyWebhook } from "../src/webhook";
 import { Apinator } from "../src/client";
 import { AuthenticationError } from "../src/errors";
 
@@ -76,6 +77,35 @@ describe("contract conformance", () => {
   it("matches webhook fixture vectors", () => {
     for (const c of WEBHOOK_FIXTURE.cases) {
       expect(signWebhookPayload(c.secret, c.timestamp, c.body)).toBe(c.expected_signature);
+    }
+  });
+
+  it("matches webhook verification fixture cases", () => {
+    type VerifyCase = {
+      name: string;
+      secret: string;
+      signing_secret?: string;
+      body: string;
+      timestamp_offset: number;
+      max_age: number | null;
+      headers: Record<string, string | string[]>;
+      expected_valid: boolean;
+    };
+    const cases: VerifyCase[] = WEBHOOK_FIXTURE.verify_cases;
+    expect(cases.length).toBeGreaterThan(0);
+
+    for (const c of cases) {
+      const timestamp = String(Math.floor(Date.now() / 1000) + c.timestamp_offset);
+      const signature = signWebhookPayload(c.signing_secret ?? c.secret, timestamp, c.body);
+      const fill = (v: string) =>
+        v.replace("{timestamp}", timestamp).replace("{signature}", signature);
+      const headers: Record<string, string | string[]> = {};
+      for (const [k, v] of Object.entries(c.headers)) {
+        headers[k] = Array.isArray(v) ? v.map(fill) : fill(v);
+      }
+
+      const valid = verifyWebhook(c.secret, headers, c.body, c.max_age ?? undefined);
+      expect(valid, c.name).toBe(c.expected_valid);
     }
   });
 

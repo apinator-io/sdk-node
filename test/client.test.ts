@@ -351,67 +351,91 @@ describe("Apinator client", () => {
   });
 
   describe("verifyWebhook", () => {
-    it("should verify valid webhook signature", () => {
-      const client = new Apinator(options);
+    const webhookSecret =
+      "whsec_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+    const body =
+      '{"id":"cbb368a1-bc93-42bc-b939-51c7352cbd03","event":"member_added","app_id":"test-app-id","channel":"presence-room","user_id":"42","time_ms":1760000000000}';
 
-      // Create a valid signature
-      const timestamp = Math.floor(Date.now() / 1000).toString();
-      const body = '{"event":"channel_occupied","channel":"test"}';
-
-      // We need to compute the signature using the same secret
+    function signedHeaders(secret: string, timestamp: string) {
       const crypto = require("crypto");
-      const input = `${timestamp}.${body}`;
       const signature = crypto
-        .createHmac("sha256", options.secret)
-        .update(input, "utf8")
+        .createHmac("sha256", secret)
+        .update(`${timestamp}.${body}`, "utf8")
         .digest("hex");
-
-      const headers = {
+      return {
         "x-realtime-signature": `sha256=${signature}`,
         "x-realtime-timestamp": timestamp,
       };
+    }
 
-      const result = client.verifyWebhook(headers, body);
+    it("should verify a webhook signed with the webhook secret", () => {
+      const client = new Apinator(options);
+      const timestamp = Math.floor(Date.now() / 1000).toString();
+
+      const result = client.verifyWebhook(
+        webhookSecret,
+        signedHeaders(webhookSecret, timestamp),
+        body,
+        300
+      );
       expect(result).toBe(true);
+    });
+
+    it("should not use the client's API secret", () => {
+      const client = new Apinator(options);
+      const timestamp = Math.floor(Date.now() / 1000).toString();
+
+      // Signed with the API secret: must not verify against the webhook secret.
+      const result = client.verifyWebhook(
+        webhookSecret,
+        signedHeaders(options.secret, timestamp),
+        body
+      );
+      expect(result).toBe(false);
     });
 
     it("should reject invalid webhook signature", () => {
       const client = new Apinator(options);
 
       const timestamp = Math.floor(Date.now() / 1000).toString();
-      const body = '{"event":"channel_occupied","channel":"test"}';
 
       const headers = {
         "x-realtime-signature": "sha256=invalid",
         "x-realtime-timestamp": timestamp,
       };
 
-      const result = client.verifyWebhook(headers, body);
+      const result = client.verifyWebhook(webhookSecret, headers, body);
       expect(result).toBe(false);
     });
 
     it("should respect maxAge parameter", () => {
       const client = new Apinator(options);
-
-      // Create timestamp 400 seconds ago
       const oldTimestamp = (Math.floor(Date.now() / 1000) - 400).toString();
-      const body = '{"event":"channel_occupied","channel":"test"}';
+      const headers = signedHeaders(webhookSecret, oldTimestamp);
 
-      const crypto = require("crypto");
-      const input = `${oldTimestamp}.${body}`;
-      const signature = crypto
-        .createHmac("sha256", options.secret)
-        .update(input, "utf8")
-        .digest("hex");
+      expect(client.verifyWebhook(webhookSecret, headers, body)).toBe(true);
+      expect(client.verifyWebhook(webhookSecret, headers, body, 300)).toBe(false);
+    });
 
-      const headers = {
-        "x-realtime-signature": `sha256=${signature}`,
-        "x-realtime-timestamp": oldTimestamp,
-      };
+    it("should reject a timestamp more than 300s in the future", () => {
+      const client = new Apinator(options);
+      const futureTimestamp = (Math.floor(Date.now() / 1000) + 600).toString();
+      const headers = signedHeaders(webhookSecret, futureTimestamp);
 
-      // Should fail with maxAge of 300 seconds
-      const result = client.verifyWebhook(headers, body, 300);
-      expect(result).toBe(false);
+      expect(client.verifyWebhook(webhookSecret, headers, body, 300)).toBe(false);
+    });
+
+    it("should throw when the webhook secret is missing", () => {
+      const client = new Apinator(options);
+      const timestamp = Math.floor(Date.now() / 1000).toString();
+      const headers = signedHeaders(webhookSecret, timestamp);
+
+      expect(() => client.verifyWebhook("", headers, body)).toThrow(ValidationError);
+      // Old call shape (headers first) from untyped JavaScript.
+      const legacyCall = client.verifyWebhook as unknown as (
+        ...args: unknown[]
+      ) => boolean;
+      expect(() => legacyCall.call(client, headers, body, 300)).toThrow(ValidationError);
     });
   });
 });

@@ -237,34 +237,45 @@ export class Apinator {
   /**
    * Verify the authenticity of a webhook request.
    *
-   * This function verifies that the webhook was sent by the Realtime service
-   * by validating the HMAC signature in the request headers.
+   * Webhooks are signed with the webhook endpoint's own signing secret
+   * (`whsec_...`, shown in the console for each webhook endpoint), not with the
+   * app's API secret, so it must be passed explicitly.
    *
+   * @param webhookSecret - The webhook endpoint's signing secret (`whsec_...`)
    * @param headers - HTTP headers from the webhook request
-   * @param body - Raw request body as string
+   * @param body - Raw request body as string, exactly as received
    * @param maxAge - Optional maximum age in seconds for the webhook timestamp
+   *   (300 recommended). When set, timestamps older than `maxAge` or more than
+   *   300 seconds in the future are rejected.
    * @returns true if the webhook is valid, false otherwise
+   * @throws {ValidationError} If `webhookSecret` is not a non-empty string
    *
    * @example Express.js webhook handler
    * ```ts
    * app.post('/webhooks', express.raw({ type: 'application/json' }), (req, res) => {
    *   const body = req.body.toString('utf8');
    *
-   *   if (!client.verifyWebhook(req.headers, body, 300)) {
+   *   if (!client.verifyWebhook(process.env.APINATOR_WEBHOOK_SECRET!, req.headers, body, 300)) {
    *     return res.status(401).send('Invalid signature');
    *   }
    *
    *   const event = JSON.parse(body);
-   *   // Process webhook...
+   *   // Deliveries are at-least-once: skip event.id if already processed.
    * });
    * ```
    */
   verifyWebhook(
+    webhookSecret: string,
     headers: Record<string, string | string[] | undefined>,
     body: string,
     maxAge?: number
   ): boolean {
-    return verifyWebhookSignature(this.secret, headers, body, maxAge);
+    if (typeof webhookSecret !== "string" || webhookSecret === "") {
+      throw new ValidationError(
+        "verifyWebhook requires the webhook signing secret (whsec_...) as its first argument"
+      );
+    }
+    return verifyWebhookSignature(webhookSecret, headers, body, maxAge);
   }
 
   /**

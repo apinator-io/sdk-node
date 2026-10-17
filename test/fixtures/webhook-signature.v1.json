@@ -16,5 +16,153 @@
       "body": "{}",
       "expected_signature": "7c0deac78739d9b7e52b156c7a3d10a71d55f63fa6879851bbcdee002900def8"
     }
+  ],
+  "verify_notes": "Each verify case is run against the SDK's verify function at test time. timestamp = now (unix seconds) + timestamp_offset. signature = hex(hmac_sha256(signing_secret or secret, timestamp + \".\" + body)). In header values, {timestamp} and {signature} are replaced with those values; a header value may be a string or an array of strings. Verify with secret, headers, body and max_age (null means no freshness check). When max_age is set, timestamps older than max_age or more than 300 seconds in the future are rejected. expected_valid false also covers SDKs that signal rejection by throwing a validation error.",
+  "verify_cases": [
+    {
+      "name": "valid-recent-with-max-age",
+      "secret": "whsec_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+      "body": "{\"id\":\"cbb368a1-bc93-42bc-b939-51c7352cbd03\",\"event\":\"member_added\",\"app_id\":\"app_123\",\"channel\":\"presence-room\",\"user_id\":\"42\",\"time_ms\":1760000000000}",
+      "timestamp_offset": -60,
+      "max_age": 300,
+      "headers": {
+        "X-Realtime-Signature": "sha256={signature}",
+        "X-Realtime-Timestamp": "{timestamp}"
+      },
+      "expected_valid": true
+    },
+    {
+      "name": "valid-lowercase-header-names",
+      "secret": "whsec_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+      "body": "{\"id\":\"cbb368a1-bc93-42bc-b939-51c7352cbd03\",\"event\":\"member_added\",\"app_id\":\"app_123\",\"channel\":\"presence-room\",\"user_id\":\"42\",\"time_ms\":1760000000000}",
+      "timestamp_offset": 0,
+      "max_age": 300,
+      "headers": {
+        "x-realtime-signature": "sha256={signature}",
+        "x-realtime-timestamp": "{timestamp}"
+      },
+      "expected_valid": true
+    },
+    {
+      "name": "valid-array-header-values",
+      "secret": "whsec_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+      "body": "{\"id\":\"9d1f2c4e-7a3b-4c5d-8e6f-0a1b2c3d4e5f\",\"event\":\"channel_occupied\",\"app_id\":\"app_123\",\"channel\":\"presence-room\",\"time_ms\":1760000000000}",
+      "timestamp_offset": -5,
+      "max_age": 300,
+      "headers": {
+        "x-realtime-signature": ["sha256={signature}"],
+        "x-realtime-timestamp": ["{timestamp}"],
+        "x-realtime-event": ["channel_occupied"]
+      },
+      "expected_valid": true
+    },
+    {
+      "name": "valid-signature-without-prefix",
+      "secret": "whsec_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+      "body": "{\"id\":\"cbb368a1-bc93-42bc-b939-51c7352cbd03\",\"event\":\"member_added\",\"app_id\":\"app_123\",\"channel\":\"presence-room\",\"user_id\":\"42\",\"time_ms\":1760000000000}",
+      "timestamp_offset": 0,
+      "max_age": 300,
+      "headers": {
+        "X-Realtime-Signature": "{signature}",
+        "X-Realtime-Timestamp": "{timestamp}"
+      },
+      "expected_valid": true
+    },
+    {
+      "name": "valid-small-future-skew",
+      "secret": "whsec_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+      "body": "{\"id\":\"cbb368a1-bc93-42bc-b939-51c7352cbd03\",\"event\":\"member_added\",\"app_id\":\"app_123\",\"channel\":\"presence-room\",\"user_id\":\"42\",\"time_ms\":1760000000000}",
+      "timestamp_offset": 60,
+      "max_age": 300,
+      "headers": {
+        "X-Realtime-Signature": "sha256={signature}",
+        "X-Realtime-Timestamp": "{timestamp}"
+      },
+      "expected_valid": true
+    },
+    {
+      "name": "valid-old-timestamp-without-max-age",
+      "secret": "whsec_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+      "body": "{\"id\":\"cbb368a1-bc93-42bc-b939-51c7352cbd03\",\"event\":\"member_added\",\"app_id\":\"app_123\",\"channel\":\"presence-room\",\"user_id\":\"42\",\"time_ms\":1760000000000}",
+      "timestamp_offset": -86400,
+      "max_age": null,
+      "headers": {
+        "X-Realtime-Signature": "sha256={signature}",
+        "X-Realtime-Timestamp": "{timestamp}"
+      },
+      "expected_valid": true
+    },
+    {
+      "name": "reject-expired-timestamp",
+      "secret": "whsec_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+      "body": "{\"id\":\"cbb368a1-bc93-42bc-b939-51c7352cbd03\",\"event\":\"member_added\",\"app_id\":\"app_123\",\"channel\":\"presence-room\",\"user_id\":\"42\",\"time_ms\":1760000000000}",
+      "timestamp_offset": -600,
+      "max_age": 300,
+      "headers": {
+        "X-Realtime-Signature": "sha256={signature}",
+        "X-Realtime-Timestamp": "{timestamp}"
+      },
+      "expected_valid": false
+    },
+    {
+      "name": "reject-future-timestamp",
+      "secret": "whsec_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+      "body": "{\"id\":\"cbb368a1-bc93-42bc-b939-51c7352cbd03\",\"event\":\"member_added\",\"app_id\":\"app_123\",\"channel\":\"presence-room\",\"user_id\":\"42\",\"time_ms\":1760000000000}",
+      "timestamp_offset": 600,
+      "max_age": 300,
+      "headers": {
+        "X-Realtime-Signature": "sha256={signature}",
+        "X-Realtime-Timestamp": "{timestamp}"
+      },
+      "expected_valid": false
+    },
+    {
+      "name": "reject-future-timestamp-despite-large-max-age",
+      "secret": "whsec_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+      "body": "{\"id\":\"cbb368a1-bc93-42bc-b939-51c7352cbd03\",\"event\":\"member_added\",\"app_id\":\"app_123\",\"channel\":\"presence-room\",\"user_id\":\"42\",\"time_ms\":1760000000000}",
+      "timestamp_offset": 600,
+      "max_age": 3600,
+      "headers": {
+        "X-Realtime-Signature": "sha256={signature}",
+        "X-Realtime-Timestamp": "{timestamp}"
+      },
+      "expected_valid": false
+    },
+    {
+      "name": "reject-signed-with-app-api-secret",
+      "secret": "whsec_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+      "signing_secret": "app-api-secret",
+      "body": "{\"id\":\"cbb368a1-bc93-42bc-b939-51c7352cbd03\",\"event\":\"member_added\",\"app_id\":\"app_123\",\"channel\":\"presence-room\",\"user_id\":\"42\",\"time_ms\":1760000000000}",
+      "timestamp_offset": 0,
+      "max_age": 300,
+      "headers": {
+        "X-Realtime-Signature": "sha256={signature}",
+        "X-Realtime-Timestamp": "{timestamp}"
+      },
+      "expected_valid": false
+    },
+    {
+      "name": "reject-wrong-signature",
+      "secret": "whsec_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+      "body": "{\"id\":\"cbb368a1-bc93-42bc-b939-51c7352cbd03\",\"event\":\"member_added\",\"app_id\":\"app_123\",\"channel\":\"presence-room\",\"user_id\":\"42\",\"time_ms\":1760000000000}",
+      "timestamp_offset": 0,
+      "max_age": 300,
+      "headers": {
+        "X-Realtime-Signature": "sha256=0000000000000000000000000000000000000000000000000000000000000000",
+        "X-Realtime-Timestamp": "{timestamp}"
+      },
+      "expected_valid": false
+    },
+    {
+      "name": "reject-missing-signature-header",
+      "secret": "whsec_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+      "body": "{\"id\":\"cbb368a1-bc93-42bc-b939-51c7352cbd03\",\"event\":\"member_added\",\"app_id\":\"app_123\",\"channel\":\"presence-room\",\"user_id\":\"42\",\"time_ms\":1760000000000}",
+      "timestamp_offset": 0,
+      "max_age": 300,
+      "headers": {
+        "X-Realtime-Timestamp": "{timestamp}"
+      },
+      "expected_valid": false
+    }
   ]
 }
